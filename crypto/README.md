@@ -54,7 +54,13 @@ func main() {
 ## Example code (snippet): Generate new SSH key/pair and copy to remote host
 ```
     // Generate a new key pair in the default location (~/.ssh/id_rsa ~/.ssh/id_rsa.pub)
-    var pair crypto.SshKeyPair
+	// Note: if the files specified exist then they will be overwritten
+    pair := crypto.SshKeyPair{
+		PrivateKeyFile:     "/home/jusschwa/newkeys/id_rsa",
+		PublicKeyFile:      "/home/jusschwa/newkeys/id_rsa",
+		BitSize:            4096,
+		PrivateKeyPassword: "privkeypassword",
+	}
     err := pair.GenerateNewKeyPair("privkeypassword")
 	if err != nil {
 		fmt.Println("Failed to generate key pair: ", err)
@@ -80,7 +86,9 @@ func main() {
 ## Example code (snippet): Run SSH commands using private key authenticatino
 ```
     var pair crypto.SshKeyPair
-	err := pair.CreateKeyPair("privkeypassword")
+	// By default, pair points to default key pairs in $HOME/.ssh
+	// and 4096 bit RSA is assumed. Empty password indicates no encryption.
+	err := pair.CreateKeyPair("")
 
 	client.SetPrivateKeyAuth(pair.PrivateKeyFile, pair.PrivateKeyPassword)
 
