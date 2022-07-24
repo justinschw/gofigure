@@ -85,7 +85,7 @@ func main() {
 
 ## Example code (snippet): Run SSH commands using private key authenticatino
 ```
-    var pair crypto.SshKeyPair
+        var pair crypto.SshKeyPair
 	// By default, pair points to default key pairs in $HOME/.ssh
 	// and 4096 bit RSA is assumed. Empty password indicates no encryption.
 	err := pair.CreateKeyPair("")
@@ -111,7 +111,7 @@ func main() {
 
 ## Example code (snippet): Run SSH and wait for prompt
 ```
-    err, output := ctx.RunCommandsWithPrompts([]string{
+        err, output := ctx.RunCommandsWithPrompts([]string{
 		"cd /home/pi",
 		"sudo ls -lh",
 	}, map[string]string{
@@ -125,16 +125,16 @@ func main() {
 ```
 ## Example code (snippet): Copy file to remote server
 ```
-    // Note: destination should match the full path of the file.
-    err = ctx.Put("/home/jusschwa/copydir/file", "/home/pi/copydir/file")
+        // Note: destination should match the full path of the file.
+        err = ctx.Put("/home/jusschwa/copydir/file", "/home/pi/copydir/file")
 	if err != nil {
 		fmt.Println("Error copying file: ", err)
 	}
 ```
 ## Example code (snippet): Recursively copy entire directory to remote server
 ```
-    // Note: destination should match the full path of the target directory.
-    err = ctx.Put("/home/jusschwa/copydir", "/home/pi/copydir")
+        // Note: destination should match the full path of the target directory.
+        err = ctx.Put("/home/jusschwa/copydir", "/home/pi/copydir")
 	if err != nil {
 		fmt.Println("Error copying file: ", err)
 	}
