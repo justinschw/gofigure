@@ -11,8 +11,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type sftpMethod func(s *SshClient, src string, dst string) error
-
 func putFile(s *SshClient, src string, dst string) error {
 
 	// Create containing directory if it doesn't exist
@@ -56,7 +54,6 @@ func putDir(s *SshClient, src string, dst string) error {
 			return putFile(s, srcPath, dstPath)
 		}
 
-		return nil
 	})
 
 	if err != nil {
@@ -80,7 +77,7 @@ func (s *SshClient) Put(src string, dst string) error {
 	// open connection
 	conn, err := ssh.Dial("tcp", server, s.SshConfig)
 	if err != nil {
-		return fmt.Errorf("Dial to %v failed %v", server, err)
+		return fmt.Errorf("dial to %v failed %v", server, err)
 	}
 	defer conn.Close()
 
@@ -114,7 +111,7 @@ func (s *SshClient) Delete(dst string) error {
 	// open connection
 	conn, err := ssh.Dial("tcp", server, s.SshConfig)
 	if err != nil {
-		return fmt.Errorf("Dial to %v failed %v", server, err)
+		return fmt.Errorf("dial to %v failed %v", server, err)
 	}
 	defer conn.Close()
 

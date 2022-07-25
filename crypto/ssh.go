@@ -16,21 +16,21 @@ import (
 /*
  * Run commands and output to stdout
  */
-func (s *SshClient) RunCommands(commands []string, print bool) (error, string) {
+func (s *SshClient) RunCommands(commands []string, print bool) (string, error) {
 
 	server := fmt.Sprintf("%s:%d", s.Address, s.Port)
 
 	// open connection
 	conn, err := ssh.Dial("tcp", server, s.SshConfig)
 	if err != nil {
-		return fmt.Errorf("Dial to %v failed %v", server, err), ""
+		return "", fmt.Errorf("dial to %v failed %v", server, err)
 	}
 	defer conn.Close()
 
 	// open session
 	session, err := conn.NewSession()
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 	defer session.Close()
 
@@ -41,7 +41,7 @@ func (s *SshClient) RunCommands(commands []string, print bool) (error, string) {
 
 	err = session.RequestPty("xterm", 80, 40, modes)
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 
 	output := ""
@@ -57,31 +57,31 @@ func (s *SshClient) RunCommands(commands []string, print bool) (error, string) {
 	}
 
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 
-	return err, output
+	return output, err
 
 }
 
 /*
  * Run commands with stdin responses to expected prompts
  */
-func (s *SshClient) RunCommandsWithPrompts(commands []string, prompts map[string]string, print bool) (error, string) {
+func (s *SshClient) RunCommandsWithPrompts(commands []string, prompts map[string]string, print bool) (string, error) {
 
 	server := fmt.Sprintf("%s:%d", s.Address, s.Port)
 
 	// open connection
 	conn, err := ssh.Dial("tcp", server, s.SshConfig)
 	if err != nil {
-		return fmt.Errorf("Dial to %v failed %v", server, err), ""
+		return "", fmt.Errorf("dial to %v failed %v", server, err)
 	}
 	defer conn.Close()
 
 	// open session
 	session, err := conn.NewSession()
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 	defer session.Close()
 
@@ -92,7 +92,7 @@ func (s *SshClient) RunCommandsWithPrompts(commands []string, prompts map[string
 
 	err = session.RequestPty("xterm", 80, 40, modes)
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 
 	in, err := session.StdinPipe()
@@ -148,10 +148,10 @@ func (s *SshClient) RunCommandsWithPrompts(commands []string, prompts map[string
 	allCommands := strings.Join(commands, "; ")
 	err = session.Run(allCommands)
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 
-	return err, string(output)
+	return string(output), err
 
 }
 
@@ -165,7 +165,7 @@ func (s *SshClient) CopyKeyToRemote(p SshKeyPair) error {
 	}
 	key := strings.TrimSpace(string(keyData))
 	cmd := fmt.Sprintf("if [ -z \"$(cat $HOME/.ssh/authorized_keys | grep '%s')\" ]; then echo '%s' >> $HOME/.ssh/authorized_keys; fi", key, key)
-	err, _ = s.RunCommands([]string{
+	_, err = s.RunCommands([]string{
 		cmd,
 	}, false)
 	return err
@@ -181,7 +181,7 @@ func (s *SshClient) RemoveKeyFromRemote(p SshKeyPair) error {
 	}
 	key := strings.TrimSpace(string(keyData))
 	cmd := fmt.Sprintf("cat $HOME/.ssh/authorized_keys | grep %s > $HOME/.ssh/authorized_keys", key)
-	err, _ = s.RunCommands([]string{
+	_, err = s.RunCommands([]string{
 		cmd,
 	}, false)
 	return err

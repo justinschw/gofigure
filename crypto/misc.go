@@ -178,12 +178,12 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 	}
 }
 
-func getHomeDir() (error, string) {
+func getHomeDir() (string, error) {
 	user, err := user.Current()
 	if err != nil {
-		return err, ""
+		return "", err
 	}
-	return nil, user.HomeDir
+	return user.HomeDir, nil
 }
 
 /*
@@ -212,7 +212,7 @@ func (c *SshClient) NewCryptoContext() error {
 	 * Set defaults for unset
 	 */
 	if c.KnownHostsFile == "" {
-		err, homeDir := getHomeDir()
+		homeDir, err := getHomeDir()
 		if err != nil {
 			return err
 		}
@@ -229,7 +229,7 @@ func (c *SshClient) NewCryptoContext() error {
 	}
 
 	if len(c.Auth) == 0 {
-		err, homeDir := getHomeDir()
+		homeDir, err := getHomeDir()
 		if err != nil {
 			return err
 		}
@@ -261,7 +261,7 @@ func (c *SshClient) NewCryptoContext() error {
 			// read private key file
 			pemBytes, err := ioutil.ReadFile(a.PrivateKeyFile)
 			if err != nil {
-				return fmt.Errorf("Reading private key file failed %v", err)
+				return fmt.Errorf("reading private key file failed %v", err)
 			}
 
 			// create signer
@@ -288,7 +288,7 @@ func (pair *SshKeyPair) CreateKeyPair(privateKeyPassword string) error {
 
 	// Set defaults
 	if pair.PublicKeyFile == "" {
-		err, homePath := getHomeDir()
+		homePath, err := getHomeDir()
 		if err != nil {
 			return err
 		}
@@ -296,7 +296,7 @@ func (pair *SshKeyPair) CreateKeyPair(privateKeyPassword string) error {
 	}
 
 	if pair.PrivateKeyFile == "" {
-		err, homePath := getHomeDir()
+		homePath, err := getHomeDir()
 		if err != nil {
 			return err
 		}
@@ -333,12 +333,12 @@ func (pair *SshKeyPair) GenerateNewKeyPair(privateKeyPassword string) error {
 
 	err = writeKeyToFile(privateKeyBytes, pair.PrivateKeyFile)
 	if err != nil {
-		return errors.New(fmt.Sprint("Failed writing private key to file: %s", err))
+		return fmt.Errorf("failed writing private key to file: %s", err)
 	}
 
 	err = writeKeyToFile([]byte(publicKeyBytes), pair.PublicKeyFile)
 	if err != nil {
-		return errors.New(fmt.Sprint("Failed writing public key to file: %s", err))
+		return fmt.Errorf("failed writing public key to file: %s", err)
 	}
 
 	return nil
