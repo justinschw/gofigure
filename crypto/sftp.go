@@ -11,7 +11,9 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func (s *CryptoContext) PutFile(src string, dst string) error {
+type sftpMethod func(s *SshClient, src string, dst string) error
+
+func putFile(s *SshClient, src string, dst string) error {
 
 	// Create containing directory if it doesn't exist
 	dstPath := filepath.Dir(dst)
@@ -40,7 +42,7 @@ func (s *CryptoContext) PutFile(src string, dst string) error {
 	return err
 }
 
-func (s *CryptoContext) PutDir(src string, dst string) error {
+func putDir(s *SshClient, src string, dst string) error {
 	err := filepath.Walk(src, func(srcPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -51,7 +53,7 @@ func (s *CryptoContext) PutDir(src string, dst string) error {
 		if info.IsDir() {
 			return s.SftpConfig.MkdirAll(dstPath)
 		} else {
-			return s.PutFile(srcPath, dstPath)
+			return putFile(s, srcPath, dstPath)
 		}
 
 		return nil
@@ -64,9 +66,17 @@ func (s *CryptoContext) PutDir(src string, dst string) error {
 	return nil
 }
 
-func (s *CryptoContext) Put(src string, dst string) error {
+func RmFile(s *SshClient, src string, dst string) error {
+	return s.SftpConfig.Remove(dst)
+}
 
-	server := fmt.Sprintf("%s:%d", s.SshClient.Address, s.SshClient.Port)
+func RmDir(s *SshClient, src string, dst string) error {
+	return s.SftpConfig.RemoveDirectory(dst)
+}
+
+func (s *SshClient) Put(src string, dst string) error {
+
+	server := fmt.Sprintf("%s:%d", s.Address, s.Port)
 	// open connection
 	conn, err := ssh.Dial("tcp", server, s.SshConfig)
 	if err != nil {
@@ -81,19 +91,49 @@ func (s *CryptoContext) Put(src string, dst string) error {
 	defer sftpc.Close()
 	s.SftpConfig = sftpc
 
-	file, err := os.Open(src)
+	/*file, err := os.Open(src)
 	if err != nil {
 		return err
-	}
+	}*/
 
-	fileInfo, err := file.Stat()
+	fileInfo, err := os.Stat(src)
 	if err != nil {
 		return err
 	}
 
 	if fileInfo.IsDir() {
-		return s.PutDir(src, dst)
+		return putDir(s, src, dst)
 	} else {
-		return s.PutFile(src, dst)
+		return putFile(s, src, dst)
 	}
+}
+
+func (s *SshClient) Delete(dst string) error {
+
+	server := fmt.Sprintf("%s:%d", s.Address, s.Port)
+	// open connection
+	conn, err := ssh.Dial("tcp", server, s.SshConfig)
+	if err != nil {
+		return fmt.Errorf("Dial to %v failed %v", server, err)
+	}
+	defer conn.Close()
+
+	sftpc, err := sftp.NewClient(conn)
+	if err != nil {
+		return err
+	}
+	defer sftpc.Close()
+	s.SftpConfig = sftpc
+
+	fileInfo, err := s.SftpConfig.Stat(dst)
+	if err != nil {
+		return err
+	}
+
+	if fileInfo.IsDir() {
+		return s.SftpConfig.RemoveDirectory(dst)
+	} else {
+		return s.SftpConfig.Remove(dst)
+	}
+
 }

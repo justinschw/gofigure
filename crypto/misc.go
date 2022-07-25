@@ -30,6 +30,9 @@ type SshClient struct {
 	Auth            []SshAuth
 	HostKeyCallback ssh.HostKeyCallback
 	KnownHostsFile  string
+	// These get filled in when we request connection
+	SshConfig  *ssh.ClientConfig
+	SftpConfig *sftp.Client
 }
 
 type CryptoContext struct {
@@ -203,7 +206,7 @@ func (c *SshClient) SetPrivateKeyAuth(privateKeyFile string, privateKeyPassword 
  * Get a crypto context for SSH/SFTP commands
  */
 
-func NewCryptoContext(c SshClient) (error, *CryptoContext) {
+func (c *SshClient) NewCryptoContext() error {
 
 	/*
 	 * Set defaults for unset
@@ -211,7 +214,7 @@ func NewCryptoContext(c SshClient) (error, *CryptoContext) {
 	if c.KnownHostsFile == "" {
 		err, homeDir := getHomeDir()
 		if err != nil {
-			return err, nil
+			return err
 		}
 		c.KnownHostsFile = path.Join(homeDir, ".ssh", "known_hosts")
 		_, err = os.Stat(c.KnownHostsFile)
@@ -219,7 +222,7 @@ func NewCryptoContext(c SshClient) (error, *CryptoContext) {
 			// Create empty known_hosts file
 			f, err := os.Create(c.KnownHostsFile)
 			if err != nil {
-				return err, nil
+				return err
 			}
 			defer f.Close()
 		}
@@ -228,7 +231,7 @@ func NewCryptoContext(c SshClient) (error, *CryptoContext) {
 	if len(c.Auth) == 0 {
 		err, homeDir := getHomeDir()
 		if err != nil {
-			return err, nil
+			return err
 		}
 		// We will use key auth by default
 		c.Auth = append(c.Auth, SshAuth{
@@ -239,7 +242,7 @@ func NewCryptoContext(c SshClient) (error, *CryptoContext) {
 	if c.HostKeyCallback == nil {
 		hostKeyCallback, err := knownhosts.New(c.KnownHostsFile)
 		if err != nil {
-			return err, nil
+			return err
 		}
 		c.HostKeyCallback = hostKeyCallback
 	}
@@ -258,13 +261,13 @@ func NewCryptoContext(c SshClient) (error, *CryptoContext) {
 			// read private key file
 			pemBytes, err := ioutil.ReadFile(a.PrivateKeyFile)
 			if err != nil {
-				return fmt.Errorf("Reading private key file failed %v", err), nil
+				return fmt.Errorf("Reading private key file failed %v", err)
 			}
 
 			// create signer
 			signer, err := signerFromPem(pemBytes, []byte(a.PrivateKeyPassword))
 			if err != nil {
-				return err, nil
+				return err
 			}
 			authMethods = append(authMethods, ssh.PublicKeys(signer))
 		}
@@ -276,12 +279,9 @@ func NewCryptoContext(c SshClient) (error, *CryptoContext) {
 		HostKeyCallback: c.HostKeyCallback,
 	}
 
-	cryptoContext := &CryptoContext{
-		SshClient: &c,
-		SshConfig: config,
-	}
+	c.SshConfig = config
 
-	return nil, cryptoContext
+	return nil
 }
 
 func (pair *SshKeyPair) CreateKeyPair(privateKeyPassword string) error {

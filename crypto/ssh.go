@@ -16,9 +16,9 @@ import (
 /*
  * Run commands and output to stdout
  */
-func (s *CryptoContext) RunCommands(commands []string, print bool) (error, string) {
+func (s *SshClient) RunCommands(commands []string, print bool) (error, string) {
 
-	server := fmt.Sprintf("%s:%d", s.SshClient.Address, s.SshClient.Port)
+	server := fmt.Sprintf("%s:%d", s.Address, s.Port)
 
 	// open connection
 	conn, err := ssh.Dial("tcp", server, s.SshConfig)
@@ -67,9 +67,9 @@ func (s *CryptoContext) RunCommands(commands []string, print bool) (error, strin
 /*
  * Run commands with stdin responses to expected prompts
  */
-func (s *CryptoContext) RunCommandsWithPrompts(commands []string, prompts map[string]string, print bool) (error, string) {
+func (s *SshClient) RunCommandsWithPrompts(commands []string, prompts map[string]string, print bool) (error, string) {
 
-	server := fmt.Sprintf("%s:%d", s.SshClient.Address, s.SshClient.Port)
+	server := fmt.Sprintf("%s:%d", s.Address, s.Port)
 
 	// open connection
 	conn, err := ssh.Dial("tcp", server, s.SshConfig)
@@ -158,7 +158,7 @@ func (s *CryptoContext) RunCommandsWithPrompts(commands []string, prompts map[st
 /*
  * Simple method to copy keys to remote server
  */
-func (s *CryptoContext) CopyKeyToRemote(p SshKeyPair) error {
+func (s *SshClient) CopyKeyToRemote(p SshKeyPair) error {
 	keyData, err := ioutil.ReadFile(p.PublicKeyFile)
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (s *CryptoContext) CopyKeyToRemote(p SshKeyPair) error {
 /*
  * Simple method to remove keys from remote server
  */
-func (s *CryptoContext) RemoveKeyFromRemote(p SshKeyPair) error {
+func (s *SshClient) RemoveKeyFromRemote(p SshKeyPair) error {
 	keyData, err := ioutil.ReadFile(p.PublicKeyFile)
 	if err != nil {
 		return err
