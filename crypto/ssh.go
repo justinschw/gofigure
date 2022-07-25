@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -15,7 +16,7 @@ import (
 /*
  * Run commands and output to stdout
  */
-func (s *CryptoContext) RunCommands(commands []string) (error, string) {
+func (s *CryptoContext) RunCommands(commands []string, print bool) (error, string) {
 
 	server := fmt.Sprintf("%s:%d", s.SshClient.Address, s.SshClient.Port)
 
@@ -43,22 +44,30 @@ func (s *CryptoContext) RunCommands(commands []string) (error, string) {
 		return err, ""
 	}
 
-	var buff bytes.Buffer
-	session.Stdout = &buff
+	output := ""
 	allCommands := strings.Join(commands, "; ")
-	err = session.Run(allCommands)
+	if print {
+		session.Stdout = os.Stdout
+		err = session.Run(allCommands)
+	} else {
+		var buff bytes.Buffer
+		session.Stdout = &buff
+		err = session.Run(allCommands)
+		output = buff.String()
+	}
+
 	if err != nil {
 		return err, ""
 	}
 
-	return err, buff.String()
+	return err, output
 
 }
 
 /*
  * Run commands with stdin responses to expected prompts
  */
-func (s *CryptoContext) RunCommandsWithPrompts(commands []string, prompts map[string]string) (error, string) {
+func (s *CryptoContext) RunCommandsWithPrompts(commands []string, prompts map[string]string, print bool) (error, string) {
 
 	server := fmt.Sprintf("%s:%d", s.SshClient.Address, s.SshClient.Port)
 
@@ -111,6 +120,9 @@ func (s *CryptoContext) RunCommandsWithPrompts(commands []string, prompts map[st
 			*output = append(*output, b)
 
 			if b == byte('\n') {
+				if print {
+					fmt.Println(line)
+				}
 				line = ""
 				continue
 			}
@@ -119,6 +131,10 @@ func (s *CryptoContext) RunCommandsWithPrompts(commands []string, prompts map[st
 
 			for prompt, command := range prompts {
 				if strings.HasPrefix(line, prompt) {
+					if print {
+						// print before resetting line but also before entering prompt
+						fmt.Print(line)
+					}
 					_, err = in.Write([]byte(command + "\n"))
 					if err != nil {
 						break
@@ -151,7 +167,7 @@ func (s *CryptoContext) CopyKeyToRemote(p SshKeyPair) error {
 	cmd := fmt.Sprintf("if [ -z \"$(cat $HOME/.ssh/authorized_keys | grep '%s')\" ]; then echo '%s' >> $HOME/.ssh/authorized_keys; fi", key, key)
 	err, _ = s.RunCommands([]string{
 		cmd,
-	})
+	}, false)
 	return err
 }
 
@@ -167,6 +183,6 @@ func (s *CryptoContext) RemoveKeyFromRemote(p SshKeyPair) error {
 	cmd := fmt.Sprintf("cat $HOME/.ssh/authorized_keys | grep %s > $HOME/.ssh/authorized_keys", key)
 	err, _ = s.RunCommands([]string{
 		cmd,
-	})
+	}, false)
 	return err
 }
