@@ -164,7 +164,7 @@ func (s *SshClient) CopyKeyToRemote(p SshKeyPair) error {
 		return err
 	}
 	key := strings.TrimSpace(string(keyData))
-	cmd := fmt.Sprintf("if [ -z \"$(cat $HOME/.ssh/authorized_keys | grep '%s')\" ]; then echo '%s' >> $HOME/.ssh/authorized_keys; fi", key, key)
+	cmd := fmt.Sprintf("mkdir -p $HOME/ssh; if [ -z \"$(cat $HOME/.ssh/authorized_keys | grep '%s')\" ]; then echo '%s' >> $HOME/.ssh/authorized_keys; fi", key, key)
 	_, err = s.RunCommands([]string{
 		cmd,
 	}, false)
