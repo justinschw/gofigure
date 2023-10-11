@@ -14,7 +14,7 @@ import (
 func putFile(s *SshClient, src string, dst string) error {
 
 	// Create containing directory if it doesn't exist
-	dstPath := filepath.Dir(dst)
+	dstPath := filepath.ToSlash(.Dir(dst))
 	_, err := s.SftpConfig.Stat(dstPath)
 	if os.IsNotExist(err) {
 		err := s.SftpConfig.MkdirAll(dstPath)
@@ -45,8 +45,8 @@ func putDir(s *SshClient, src string, dst string) error {
 		if err != nil {
 			return err
 		}
-		relPath, _ := filepath.Rel(src, srcPath)
-		dstPath := path.Join(dst, relPath)
+		relPath, _ := filepath.ToSlash(.Rel(src, srcPath))
+		dstPath := filepath.ToSlash(path.Join(dst, relPath))
 
 		if info.IsDir() {
 			return s.SftpConfig.MkdirAll(dstPath)
